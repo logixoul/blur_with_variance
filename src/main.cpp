@@ -75,20 +75,21 @@ struct SApp : AppBasic {
 		static Array2D<float> varianceArr(sx, sy);
 
 		if(!pause2) {
-			img = gaussianBlur(img, 3);
+			//img = gaussianBlur(img, 3);
 			float sum = std::accumulate(img.begin(), img.end(), 0.0f);
 			float avg = sum / (float)img.area;
 			forxy(img)
 			{
 				float f = img(p);
 				f += .5f - avg;
-				f = lmap(f, 0.0f, 1.0f, -1.0f, 2.0f);
+				f -= .5f;
+				f *= 1.1f; // change to *= 2.0f for another effect
+				f += .5f;
 				f = constrain(f, 0.0f, 1.0f);
 				img(p) = f;
 			}
 			float sum_ = std::accumulate(img.begin(), img.end(), 0.0f);
 			float avg_ = sum_ / (float)img.area;
-			cout << avg_ << endl;
 			int r = 5;
 			Array2D<float> weights(r*2+1, r*2+1);
 			forxy(weights) {
@@ -124,8 +125,8 @@ struct SApp : AppBasic {
 			}
 			forxy(img)
 			{
-				//img(p) += varianceArr(p);
-				//img(p) *= .5f;
+				//img(p) += varianceArr(p)*::niceExpRangeX(mouseX, 0.01, 1.0);
+				//img(p) *= .9f;
 				img(p) = lerp(img(p), varianceArr(p),
 					exp(lmap(constrain(mouseX, 0.0f, 1.0f), 0.0f, 1.0f, log(.0001f), log(1.0f)))
 					);//

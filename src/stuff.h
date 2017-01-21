@@ -792,16 +792,7 @@ inline vector<float> getGaussianKernel(int ksize) { // ksize must be odd
 template<class T,class FetchFunc>
 Array2D<T> gaussianBlur(Array2D<T> src, int ksize) { // ksize must be odd. fastpath is for r%3==0.
 	int r = ksize / 2;
-	if(r % 3 == 0)
-	{
-		auto blurred = src;
-		for(int i = 0; i < 3; i++)
-		{
-			blurred = blur<T, FetchFunc>(blurred, r / 3, ::zero<T>());
-		}
-		return blurred;
-	}
-
+	
 	auto kernel = getGaussianKernel(ksize);
 	T zero=::zero<T>();
 	Array2D<T> dst1(src.w, src.h);
