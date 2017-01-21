@@ -89,17 +89,20 @@ struct SApp : AppBasic {
 			float sum_ = std::accumulate(img.begin(), img.end(), 0.0f);
 			float avg_ = sum_ / (float)img.area;
 			cout << avg_ << endl;
+			int r = 5;
+			Array2D<float> weights(r*2+1, r*2+1);
+			forxy(weights) {
+				weights(p) = smoothstep(r, r-1, p.distance(Vec2f(r, r)));
+			}
 			forxy(varianceArr)
 			{
-				int r = 5;
-				auto getW = [&](int i, int j) { return smoothstep(r, r-1, Vec2f(i, j).length()); };
 				float sum = 0.0f;
 				float sumw = 0.0f;
 				for(int i = -r; i <= r; i++)
 				{
 					for(int j = -r; j <= r; j++)
 					{
-						float w = getW(i, j);
+						float w = weights(i + r, j + r);
 						sum += img.wr(p.x + i, p.y + j) * w;
 						sumw += w;
 					}
@@ -110,7 +113,7 @@ struct SApp : AppBasic {
 				{
 					for(int j = -r; j <= r; j++)
 					{
-						float w = getW(i, j);
+						float w = weights(i + r, j + r);
 						variance += w * abs(img.wr(p.x + i, p.y + j) - avg);
 					}
 				}
