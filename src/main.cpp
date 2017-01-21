@@ -75,7 +75,7 @@ struct SApp : AppBasic {
 		static Array2D<float> varianceArr(sx, sy);
 
 		if(!pause2) {
-			//img = gaussianBlur(img, 3);
+			img = separableConvolve<float, WrapModes::DefaultImpl>(img, getGaussianKernel(3, sigmaFromKsize(3.0f)));
 			float sum = std::accumulate(img.begin(), img.end(), 0.0f);
 			float avg = sum / (float)img.area;
 			forxy(img)

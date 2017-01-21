@@ -769,31 +769,21 @@ Array2D<T> gettexdata(gl::Texture tex, GLenum format, GLenum type, ci::Area area
 	}
 	return data;
 }
-inline float sq(float f) {
-	return f * f;
-}
 
-inline vector<float> getGaussianKernel(int ksize) { // ksize must be odd
-	float sigma = 0.3*((ksize-1)*0.5 - 1) + 0.8;
-	vector<float> result;
-	int r=ksize/2;
-	float sum=0.0f;
-	for(int i=-r;i<=r;i++) {
-		float exponent = -(i*i/sq(2*sigma));
-		float val = exp(exponent);
-		sum += val;
-		result.push_back(val);
-	}
-	for(int i=0; i<result.size(); i++) {
-		result[i] /= sum;
-	}
-	return result;
-}
+float sq(float f);
+
+vector<float> getGaussianKernel(int ksize, float sigma); // ksize must be odd
+
+float sigmaFromKsize(int ksize);// ksize must be odd
+
+float ksizeFromSigma(float sigma);
+
+// KS means it has ksize and sigma args
 template<class T,class FetchFunc>
-Array2D<T> gaussianBlur(Array2D<T> src, int ksize) { // ksize must be odd. fastpath is for r%3==0.
+Array2D<T> separableConvolve(Array2D<T> src, vector<float>& kernel) {
+	int ksize = kernel.size();
 	int r = ksize / 2;
 	
-	auto kernel = getGaussianKernel(ksize);
 	T zero=::zero<T>();
 	Array2D<T> dst1(src.w, src.h);
 	Array2D<T> dst2(src.w, src.h);
@@ -866,6 +856,12 @@ Array2D<T> gaussianBlur(Array2D<T> src, int ksize) { // ksize must be odd. fastp
 		}
 	}
 	return dst2;
+}
+// one-arg version for backward compatibility
+template<class T,class FetchFunc>
+Array2D<T> gaussianBlur(Array2D<T> src, int ksize) { // ksize must be odd.
+	auto kernel = getGaussianKernel(ksize, sigmaFromKsize(ksize));
+	return separableConvolve<T, FetchFunc>(src, kernel);
 }
 template<class T>
 Array2D<T> gaussianBlur(Array2D<T> src, int ksize) {
