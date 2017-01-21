@@ -72,64 +72,64 @@ struct SApp : AppBasic {
 		mouseX =(float)getMousePos().x / (float)wsx;
 		mouseY =(float)getMousePos().y / (float)wsy;
 		gl::clear(Color(0, 0, 0));
-		static Array2D<float> img2(sx, sy);
+		static Array2D<float> varianceArr(sx, sy);
 
 		if(!pause2) {
-			if(!pause)
+			img = gaussianBlur(img, 3);
+			float sum = std::accumulate(img.begin(), img.end(), 0.0f);
+			float avg = sum / (float)img.area;
+			forxy(img)
 			{
-				img = gaussianBlur(img, 3);
-				float sum = std::accumulate(img.begin(), img.end(), 0.0f);
-				float avg = sum / (float)img.area;
-				forxy(img)
-				{
-					float f = img(p);
-					f += .5f - avg;
-					f = lmap(f, 0.0f, 1.0f, -1.0f, 2.0f);
-					f = constrain(f, 0.0f, 1.0f);
-					img(p) = f;
-				}
+				float f = img(p);
+				f += .5f - avg;
+				f = lmap(f, 0.0f, 1.0f, -1.0f, 2.0f);
+				f = constrain(f, 0.0f, 1.0f);
+				img(p) = f;
 			}
 			float sum_ = std::accumulate(img.begin(), img.end(), 0.0f);
 			float avg_ = sum_ / (float)img.area;
 			cout << avg_ << endl;
-			forxy(img2)
+			forxy(varianceArr)
 			{
 				int r = 5;
+				auto getW = [&](int i, int j) { return smoothstep(r, r-1, Vec2f(i, j).length()); };
 				float sum = 0.0f;
 				float sumw = 0.0f;
 				for(int i = -r; i <= r; i++)
 				{
 					for(int j = -r; j <= r; j++)
 					{
-						
-						sum += img.wr(p.x + i, p.y + j);
+						float w = getW(i, j);
+						sum += img.wr(p.x + i, p.y + j) * w;
+						sumw += w;
 					}
 				}
-				float avg = sum / pow(2.0f * (float)r + 1.0f, 2.0f);
+				float avg = sum / sumw;
 				float variance = 0.0f;
 				for(int i = -r; i <= r; i++)
 				{
 					for(int j = -r; j <= r; j++)
 					{
-						variance += abs(img.wr(p.x + i, p.y + j) - avg);
+						float w = getW(i, j);
+						variance += w * abs(img.wr(p.x + i, p.y + j) - avg);
 					}
 				}
 				if(avg == 0.0f)
-					img2(p) = 0.0f;
+					varianceArr(p) = 0.0f;
 				else
-					img2(p) = /*.1f * mouseX * */ variance / avg;
+					varianceArr(p) = variance / avg;
 			}
 			forxy(img)
 			{
-				//img(p) += img2(p);
+				//img(p) += varianceArr(p);
 				//img(p) *= .5f;
-				img(p) = lerp(img(p), img2(p),
+				img(p) = lerp(img(p), varianceArr(p),
 					exp(lmap(constrain(mouseX, 0.0f, 1.0f), 0.0f, 1.0f, log(.0001f), log(1.0f)))
 					);//
 			}
 		} // pause2
 		//tex.setMagFilter(GL_NEAREST);
-		Array2D<float> img3 = (keys['v']) ? img2.clone() : img.clone();
+		Array2D<float> img3 = (keys['v']) ? varianceArr.clone() : img.clone();
 		float min_=*std::min_element(img3.begin(), img3.end());
 		float max_=*std::max_element(img3.begin(), img3.end());
 		if(min_==max_)
