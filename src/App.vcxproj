@@ -124,7 +124,6 @@
     <ClCompile Include="util.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="linq.h" />
     <ClInclude Include="precompiled.h" />
     <ClInclude Include="stuff.h" />
     <ClInclude Include="util.h" />
