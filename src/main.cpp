@@ -3,6 +3,7 @@
 #include <sstream>
 #include <algorithm>
 #include <cinder/app/Renderer.h>
+#include "stefanapp.h"
 #include "stuff.h"
 
 int wsx=800,wsy=600;
@@ -11,14 +12,14 @@ int sx=wsx/scale;
 int sy=wsy/scale;
 Array2D<float> img(sx, sy);
 gl::Texture tex;
-float mouseX, mouseY;
 bool pause = false, pause2 = false;
 typedef std::complex<float> Complex;
-bool keys[256];
 stringstream out;
+Array2D<float> varianceArr(sx, sy);
+
 //typedef double N
 
-struct SApp : AppBasic {
+struct SApp : StefanApp {
 	void setup()
 	{
 		createConsole();
@@ -42,6 +43,7 @@ struct SApp : AppBasic {
 	}
 	void keyDown(KeyEvent e)
 	{
+		StefanApp::keyDown(e);
 		if(e.getChar() == 'r')
 		{
 			reset();
@@ -54,26 +56,8 @@ struct SApp : AppBasic {
 		{
 			pause2 = !pause2;
 		}
-		keys[e.getChar()]=true;
 	}
-	void keyUp(KeyEvent e)
-	{
-		keys[e.getChar()]=false;
-	}
-	void mouseDown(MouseEvent e)
-	{
-	}
-	void draw()
-	{
-		out.str("");
-
-		wsx = getWindowWidth();
-		wsy = getWindowHeight();
-		mouseX =(float)getMousePos().x / (float)wsx;
-		mouseY =(float)getMousePos().y / (float)wsy;
-		gl::clear(Color(0, 0, 0));
-		static Array2D<float> varianceArr(sx, sy);
-
+	void stefanUpdate() {
 		if(!pause2) {
 			img = separableConvolve<float, WrapModes::DefaultImpl>(img, getGaussianKernel(3, sigmaFromKsize(3.0f)));
 			float sum = std::accumulate(img.begin(), img.end(), 0.0f);
@@ -132,6 +116,14 @@ struct SApp : AppBasic {
 					);//
 			}
 		} // pause2
+		if(pause || pause2)
+			Sleep(50);
+	}
+	void stefanDraw()
+	{
+		out.str("");
+
+		gl::clear(Color(0, 0, 0));
 		//tex.setMagFilter(GL_NEAREST);
 		Array2D<float> img3 = (keys['v']) ? varianceArr.clone() : img.clone();
 		float min_=*std::min_element(img3.begin(), img3.end());

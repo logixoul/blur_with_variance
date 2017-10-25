@@ -113,19 +113,27 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="cfg1.cpp" />
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="my_console.cpp" />
     <ClCompile Include="precompiled.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeaderFile Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">precompiled.h</PrecompiledHeaderFile>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeaderFile Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">precompiled.h</PrecompiledHeaderFile>
     </ClCompile>
+    <ClCompile Include="stefanapp.cpp" />
     <ClCompile Include="stuff.cpp" />
+    <ClCompile Include="sw.cpp" />
     <ClCompile Include="util.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="cfg1.h" />
+    <ClInclude Include="my_console.h" />
     <ClInclude Include="precompiled.h" />
+    <ClInclude Include="stefanapp.h" />
     <ClInclude Include="stuff.h" />
+    <ClInclude Include="sw.h" />
     <ClInclude Include="util.h" />
   </ItemGroup>
   <ItemGroup>
