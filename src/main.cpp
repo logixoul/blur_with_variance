@@ -3,7 +3,7 @@
 #include <sstream>
 #include <algorithm>
 #include <cinder/app/Renderer.h>
-#include "stefanapp.h"
+#include "stefanfw.h"
 #include "stuff.h"
 
 int wsx=800,wsy=600;
@@ -11,7 +11,6 @@ int scale=4;
 int sx=wsx/::scale;
 int sy=wsy/::scale;
 Array2D<float> img(sx, sy);
-gl::Texture tex;
 bool pause = false, pause2 = false;
 typedef std::complex<float> Complex;
 stringstream out;
@@ -19,20 +18,23 @@ Array2D<float> varianceArr(sx, sy);
 
 //typedef double N
 
-struct SApp : StefanApp {
+struct SApp : App {
 	void setup()
 	{
 		createConsole();
 		setWindowSize(wsx, wsy);
-		gl::Texture::Format fmt;
-		fmt.setInternalFormat(GL_RGBA16F);
-		tex = gl::Texture(sx, sy, fmt);
-		glClampColor(GL_CLAMP_VERTEX_COLOR, GL_FALSE);
-		glClampColor(GL_CLAMP_FRAGMENT_COLOR, GL_FALSE);
-		glClampColor(GL_CLAMP_READ_COLOR, GL_FALSE);
+		enableDenormalFlushToZero(); 
+		disableGLReadClamp();
 		reset();
 
 		cout.rdbuf(out.rdbuf());
+	}
+	void update()
+	{
+		stefanfw::beginFrame();
+		stefanUpdate();
+		stefanDraw();
+		stefanfw::endFrame();
 	}
 	void reset()
 	{
@@ -43,7 +45,6 @@ struct SApp : StefanApp {
 	}
 	void keyDown(KeyEvent e)
 	{
-		StefanApp::keyDown(e);
 		if(e.getChar() == 'r')
 		{
 			reset();
@@ -77,7 +78,7 @@ struct SApp : StefanApp {
 			int r = 5;
 			Array2D<float> weights(r*2+1, r*2+1);
 			forxy(weights) {
-				weights(p) = smoothstep(r, r-1, p.distance(vec2(r, r)));
+				weights(p) = smoothstep(r, r-1, distance(vec2(p), vec2(r, r)));
 			}
 			forxy(varianceArr)
 			{
@@ -166,16 +167,13 @@ struct SApp : StefanApp {
 			img3(p) = f;
 
 			if(0)img3(p) = 100.0f*exp(
-				-pow(mouseX*vec2(p).distance(vec2(sx,sy)/2.0f), 2.0f)
+				-pow(mouseX*distance(vec2(p),vec2(sx,sy)/2.0f), 2.0f)
 				);
 		}
 
-		static gl::Texture tex2(img3.w, img3.h);
-		tex2.bind();
-		//glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, sx, sy, GL_RGB, GL_FLOAT, imgf_rgb.data);
-		glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, img3.w, img3.h, GL_LUMINANCE, GL_FLOAT, img3.data);
-
-		gl::draw(tex2, getWindowBounds());
+		auto tex2 = gtex(img3);
+		
+		gl::draw(redToLuminance(tex2), getWindowBounds());
 
 		gl::drawString(out.str(), vec2(0, 20));
 		//Sleep(constrain(mouseX, 0.0f, 1.0f) * 1000.0f);
@@ -198,21 +196,4 @@ struct SApp : StefanApp {
 	}
 };
 
-//CINDER_APP_BASIC(SApp, RendererGl)
-int WINAPI WinMain(HINSTANCE hInstance,HINSTANCE hPrevInstance,LPSTR lpCmdLine,int nCmdShow) {	
-	try{
-		cinder::app::AppBase::prepareLaunch();														
-		cinder::app::AppBase *app = new SApp;														
-		cinder::app::Renderer *ren = new RendererGl;													
-		cinder::app::AppBase::executeLaunch( app, ren, "SApp" );										
-		cinder::app::AppBase::cleanupLaunch();														
-		return 0;																					
-	}catch(ci::gl::GlslProgCompileExc const& e) {
-		cout << "caught: " << endl << e.what() << endl;
-		//int dummy;cin>>dummy;
-		system("pause");
-
-
-
-	}
-}
+CINDER_APP(SApp, RendererGl)
