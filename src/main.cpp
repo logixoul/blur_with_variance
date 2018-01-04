@@ -2,21 +2,19 @@
 #include "util.h"
 #include <sstream>
 #include <algorithm>
+#include "gpgpu.h"
 #include <cinder/app/Renderer.h>
 #include "stefanfw.h"
 #include "stuff.h"
 
-int wsx=800,wsy=600;
-int scale=4;
+int wsx=1280,wsy=720;
+int scale=6;
 int sx=wsx/::scale;
 int sy=wsy/::scale;
 Array2D<float> img(sx, sy);
 bool pause = false, pause2 = false;
 typedef std::complex<float> Complex;
-stringstream out;
 Array2D<float> varianceArr(sx, sy);
-
-//typedef double N
 
 struct SApp : App {
 	void setup()
@@ -26,8 +24,6 @@ struct SApp : App {
 		enableDenormalFlushToZero(); 
 		disableGLReadClamp();
 		reset();
-
-		cout.rdbuf(out.rdbuf());
 	}
 	void update()
 	{
@@ -60,7 +56,12 @@ struct SApp : App {
 	}
 	void stefanUpdate() {
 		if(!pause2) {
-			img = separableConvolve<float, WrapModes::DefaultImpl>(img, getGaussianKernel(3, sigmaFromKsize(3.0f)));
+			//float lerpAmount = cfg1::getOpt("lerpAmount", .5f, []() { return true; },
+			//	[&]() { return expRange(constrain(mouseX, 0.0f, 1.0f), .0001f, 1.0f); });
+			//float lerpAmount = fmod(getElapsedSeconds(), 20.0) < 10.0f ? 0.005 : 0.01;
+			float lerpAmount = lerp(0.001, 0.009, pow(s1(getElapsedSeconds() * 0.6f), 3.0f));
+			cout << lerpAmount << endl;
+			img = separableConvolve<float, WrapModes::DefaultImpl>(img, getGaussianKernel(3, sigmaFromKsize(2.0f)));
 			float sum = std::accumulate(img.begin(), img.end(), 0.0f);
 			float avg = sum / (float)img.area;
 			forxy(img)
@@ -68,7 +69,7 @@ struct SApp : App {
 				float f = img(p);
 				f += .5f - avg;
 				f -= .5f;
-				f *= 1.1f; // change to *= 2.0f for another effect
+				f *= 2.0f; // change to *= 1.1f for another effect
 				f += .5f;
 				f = constrain(f, 0.0f, 1.0f);
 				img(p) = f;
@@ -77,20 +78,20 @@ struct SApp : App {
 			float avg_ = sum_ / (float)img.area;
 			int r = 5;
 			Array2D<float> weights(r*2+1, r*2+1);
+			float sumw = 0.0f;
 			forxy(weights) {
 				weights(p) = smoothstep(r, r-1, distance(vec2(p), vec2(r, r)));
+				sumw += weights(p);
 			}
 			forxy(varianceArr)
 			{
 				float sum = 0.0f;
-				float sumw = 0.0f;
 				for(int i = -r; i <= r; i++)
 				{
 					for(int j = -r; j <= r; j++)
 					{
 						float w = weights(i + r, j + r);
 						sum += img.wr(p.x + i, p.y + j) * w;
-						sumw += w;
 					}
 				}
 				float avg = sum / sumw;
@@ -110,20 +111,26 @@ struct SApp : App {
 			}
 			forxy(img)
 			{
-				//img(p) += varianceArr(p)*::niceExpRangeX(mouseX, 0.01, 1.0);
-				//img(p) *= .9f;
 				img(p) = lerp(img(p), varianceArr(p),
-					exp(lmap(constrain(mouseX, 0.0f, 1.0f), 0.0f, 1.0f, log(.0001f), log(1.0f)))
-					);//
+					lerpAmount
+				);
 			}
+			auto img2 = zeros_like(img);
+			vec2 center(img.Size() / 2);
+			forxy(img) {
+				vec2 fromCenter = vec2(p) - center;
+				vec2 v(fromCenter.y, -fromCenter.x);
+				v *= .01f;
+				v = safeNormalized(v) * pow(length(v), 2.0f);
+				aaPoint(img2, vec2(p) + v, img(p));
+			}
+			img = img2;
 		} // pause2
 		if(pause || pause2)
 			Sleep(50);
 	}
 	void stefanDraw()
 	{
-		out.str("");
-
 		gl::clear(Color(0, 0, 0));
 		//tex.setMagFilter(GL_NEAREST);
 		Array2D<float> img3 = (keys['v']) ? varianceArr.clone() : img.clone();
@@ -171,17 +178,16 @@ struct SApp : App {
 				);
 		}
 
-		auto tex2 = gtex(img3);
-		
-		gl::draw(redToLuminance(tex2), getWindowBounds());
-
-		gl::drawString(out.str(), vec2(0, 20));
-		//Sleep(constrain(mouseX, 0.0f, 1.0f) * 1000.0f);
-	}
-	template<class T>
-	Array2D<T> switch_rows_cols(Array2D<T> a) {
-		auto a2=Array2D<T>(a.h, a.w); forxy(a2) { a2(p) = a(p.y, p.x); }
-		return a2;
+		auto tex = gtex(img3);
+		tex = shade2(tex,
+			"float f = fetch1();"
+			"float fw = fwidth(f);"
+			"f = smoothstep(.5 - fw / 2, 0.5 + fw / 2, f);"
+			"_out.r = f;"
+			, ShadeOpts().scale(::scale)
+		);
+		tex = redToLuminance(tex);
+		gl::draw(tex, getWindowBounds());
 	}
 	float s1(float f) { return .5f + .5f * sin(f); }
 	float expRange(float f, float val0, float val1) { return exp(lmap(f, 0.0f, 1.0f, log(val0), log(val1))); }
