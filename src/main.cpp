@@ -8,8 +8,8 @@
 
 int wsx=800,wsy=600;
 int scale=4;
-int sx=wsx/scale;
-int sy=wsy/scale;
+int sx=wsx/::scale;
+int sy=wsy/::scale;
 Array2D<float> img(sx, sy);
 gl::Texture tex;
 bool pause = false, pause2 = false;
@@ -77,7 +77,7 @@ struct SApp : StefanApp {
 			int r = 5;
 			Array2D<float> weights(r*2+1, r*2+1);
 			forxy(weights) {
-				weights(p) = smoothstep(r, r-1, p.distance(Vec2f(r, r)));
+				weights(p) = smoothstep(r, r-1, p.distance(vec2(r, r)));
 			}
 			forxy(varianceArr)
 			{
@@ -166,7 +166,7 @@ struct SApp : StefanApp {
 			img3(p) = f;
 
 			if(0)img3(p) = 100.0f*exp(
-				-pow(mouseX*Vec2f(p).distance(Vec2f(sx,sy)/2.0f), 2.0f)
+				-pow(mouseX*vec2(p).distance(vec2(sx,sy)/2.0f), 2.0f)
 				);
 		}
 
@@ -177,7 +177,7 @@ struct SApp : StefanApp {
 
 		gl::draw(tex2, getWindowBounds());
 
-		gl::drawString(out.str(), Vec2f(0, 20));
+		gl::drawString(out.str(), vec2(0, 20));
 		//Sleep(constrain(mouseX, 0.0f, 1.0f) * 1000.0f);
 	}
 	template<class T>
@@ -201,11 +201,11 @@ struct SApp : StefanApp {
 //CINDER_APP_BASIC(SApp, RendererGl)
 int WINAPI WinMain(HINSTANCE hInstance,HINSTANCE hPrevInstance,LPSTR lpCmdLine,int nCmdShow) {	
 	try{
-		cinder::app::AppBasic::prepareLaunch();														
-		cinder::app::AppBasic *app = new SApp;														
+		cinder::app::AppBase::prepareLaunch();														
+		cinder::app::AppBase *app = new SApp;														
 		cinder::app::Renderer *ren = new RendererGl;													
-		cinder::app::AppBasic::executeLaunch( app, ren, "SApp" );										
-		cinder::app::AppBasic::cleanupLaunch();														
+		cinder::app::AppBase::executeLaunch( app, ren, "SApp" );										
+		cinder::app::AppBase::cleanupLaunch();														
 		return 0;																					
 	}catch(ci::gl::GlslProgCompileExc const& e) {
 		cout << "caught: " << endl << e.what() << endl;
