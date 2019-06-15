@@ -6,6 +6,7 @@
 #include <cinder/app/Renderer.h>
 #include "stefanfw.h"
 #include "stuff.h"
+#include "simplexnoise.h"
 
 int wsx=1280,wsy=720;
 int scale=6;
@@ -15,6 +16,7 @@ Array2D<float> img(sx, sy);
 bool pause = false, pause2 = false;
 typedef std::complex<float> Complex;
 Array2D<float> varianceArr(sx, sy);
+float noiseTimeDim = 0;
 
 struct SApp : App {
 	void setup()
@@ -56,11 +58,14 @@ struct SApp : App {
 	}
 	void stefanUpdate() {
 		if(!pause2) {
+			noiseTimeDim++;
+
 			//float lerpAmount = cfg1::getOpt("lerpAmount", .5f, []() { return true; },
 			//	[&]() { return expRange(constrain(mouseX, 0.0f, 1.0f), .0001f, 1.0f); });
 			//float lerpAmount = fmod(getElapsedSeconds(), 20.0) < 10.0f ? 0.005 : 0.01;
-			float lerpAmount = lerp(0.001, 0.009, pow(s1(getElapsedSeconds() * 0.6f), 3.0f));
-			cout << lerpAmount << endl;
+			//float lerpAmount = lerp(0.001, 0.009, pow(s1(getElapsedSeconds() * 0.6f), 3.0f));
+			//float lerpAmount = 0.009f;
+			//cout << lerpAmount << endl;
 			img = separableConvolve<float, WrapModes::DefaultImpl>(img, getGaussianKernel(3, sigmaFromKsize(2.0f)));
 			float sum = std::accumulate(img.begin(), img.end(), 0.0f);
 			float avg = sum / (float)img.area;
@@ -109,8 +114,10 @@ struct SApp : App {
 				else
 					varianceArr(p) = variance / avg;
 			}
+			float nscale = 4 / (float)img.w;
 			forxy(img)
 			{
+				float lerpAmount = scaled_raw_noise_3d(0.001, 0.009, p.x * nscale, p.y * nscale, noiseTimeDim * .01f);
 				img(p) = lerp(img(p), varianceArr(p),
 					lerpAmount
 				);
