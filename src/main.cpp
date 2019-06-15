@@ -128,7 +128,8 @@ struct SApp : App {
 				vec2 fromCenter = vec2(p) - center;
 				vec2 v(fromCenter.y, -fromCenter.x);
 				v *= .01f;
-				v = safeNormalized(v) * dot(v, v);//pow(length(v), 2.0f);
+				//v = safeNormalized(v) * dot(v, v);//pow(length(v), 2.0f);
+				v *= length(v);
 				aaPoint(img2, vec2(p) + v, img(p));
 			}
 			img = img2;
