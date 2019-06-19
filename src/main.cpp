@@ -114,7 +114,7 @@ struct SApp : App {
 				else
 					varianceArr(p) = variance / avg;
 			}
-			float nscale = 4 / (float)img.w;
+			float nscale = 2 / (float)img.w;
 			forxy(img)
 			{
 				float lerpAmount = scaled_raw_noise_3d(0.001, 0.009, p.x * nscale, p.y * nscale, noiseTimeDim * .01f);
@@ -150,13 +150,14 @@ struct SApp : App {
 		forxy(img3)
 		{
 			img3(p) = lmap(img3(p), min_, max_, 0.0f, 1.0f);
+			img3(p) = constrain<float>(img3(p), 0, 1);
 		}
 		forxy(img3)
 		{
 			int i = (histogram.size() - 1) * img3(p);
 			histogram[i]++;
 		}
-		int i0, i1;
+		/*int i0, i1;
 		for(i0 = 0; i0 < histogram.size(); i0++)
 		{
 			if(histogram[i0] > img3.area * .1f)
@@ -166,14 +167,19 @@ struct SApp : App {
 		{
 			if(histogram[i1] > img3.area * .1f)
 				break;
-		}
-		float i0_f = lmap((float)i0, 0.0f, (float)(histogram.size() - 1), 0.0f, 1.0f);
+		}*/
+		int i0 = (histogram.size() - 1)*.4f;
+		int i1 = (histogram.size() - 1)*.6f;
+		/*float i0_f = lmap((float)i0, 0.0f, (float)(histogram.size() - 1), 0.0f, 1.0f);
 		float i1_f = lmap((float)i1, 0.0f, (float)(histogram.size() - 1), 0.0f, 1.0f);
 		if(i1_f == i0_f)
-			i1_f++;
+			i1_f++;*/
+		float j0 = histogram[i0];
+		float j1 = histogram[i1];
 		forxy(img3)
 		{
-			float f = lmap(img3(p), i0_f, i1_f, 0.0f, 1.0f);
+			float f = lmap(img3(p), j0, j1, 0.0f, 1.0f);
+			f = constrain<float>(f, 0, 1);
 			//f *= 2.0f * .5f * exp(lmap(mouseX, 0.0f, 1.0f, log(.001f), log(100.0f)));
 			//f /= f + 1.0f;
 			float x = f;
@@ -186,11 +192,11 @@ struct SApp : App {
 				);
 		}
 
-		auto tex = gtex(img3);
+		auto tex = gtex(img);
 		tex = shade2(tex,
 			"float f = fetch1();"
 			"float fw = fwidth(f);"
-			"f = smoothstep(.5 - fw / 2, 0.5 + fw / 2, f);"
+			//"f = smoothstep(.5 - fw / 2, 0.5 + fw / 2, f);"
 			"_out.r = f;"
 			, ShadeOpts().scale(::scale)
 		);
