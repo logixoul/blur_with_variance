@@ -6,7 +6,6 @@
 #include <cinder/app/Renderer.h>
 #include "stefanfw.h"
 #include "stuff.h"
-#include "simplexnoise.h"
 
 int wsx=1280,wsy=720;
 int scale=6;
@@ -16,7 +15,6 @@ Array2D<float> img(sx, sy);
 bool pause = false, pause2 = false;
 typedef std::complex<float> Complex;
 Array2D<float> varianceArr(sx, sy);
-float noiseTimeDim = 0;
 
 struct SApp : App {
 	void setup()
@@ -58,14 +56,11 @@ struct SApp : App {
 	}
 	void stefanUpdate() {
 		if(!pause2) {
-			noiseTimeDim++;
-
 			//float lerpAmount = cfg1::getOpt("lerpAmount", .5f, []() { return true; },
 			//	[&]() { return expRange(constrain(mouseX, 0.0f, 1.0f), .0001f, 1.0f); });
 			//float lerpAmount = fmod(getElapsedSeconds(), 20.0) < 10.0f ? 0.005 : 0.01;
-			//float lerpAmount = lerp(0.001, 0.009, pow(s1(getElapsedSeconds() * 0.6f), 3.0f));
-			//float lerpAmount = 0.009f;
-			//cout << lerpAmount << endl;
+			float lerpAmount = lerp(0.001, 0.009, pow(s1(getElapsedSeconds() * 0.6f), 3.0f));
+			cout << lerpAmount << endl;
 			img = separableConvolve<float, WrapModes::DefaultImpl>(img, getGaussianKernel(3, sigmaFromKsize(2.0f)));
 			float sum = std::accumulate(img.begin(), img.end(), 0.0f);
 			float avg = sum / (float)img.area;
@@ -114,10 +109,8 @@ struct SApp : App {
 				else
 					varianceArr(p) = variance / avg;
 			}
-			float nscale = 2 / (float)img.w;
 			forxy(img)
 			{
-				float lerpAmount = scaled_raw_noise_3d(0.001, 0.009, p.x * nscale, p.y * nscale, noiseTimeDim * .01f);
 				img(p) = lerp(img(p), varianceArr(p),
 					lerpAmount
 				);
@@ -128,8 +121,7 @@ struct SApp : App {
 				vec2 fromCenter = vec2(p) - center;
 				vec2 v(fromCenter.y, -fromCenter.x);
 				v *= .01f;
-				//v = safeNormalized(v) * dot(v, v);//pow(length(v), 2.0f);
-				v *= length(v);
+				v = safeNormalized(v) * pow(length(v), 2.0f);
 				aaPoint(img2, vec2(p) + v, img(p));
 			}
 			img = img2;
@@ -150,14 +142,13 @@ struct SApp : App {
 		forxy(img3)
 		{
 			img3(p) = lmap(img3(p), min_, max_, 0.0f, 1.0f);
-			img3(p) = constrain<float>(img3(p), 0, 1);
 		}
 		forxy(img3)
 		{
 			int i = (histogram.size() - 1) * img3(p);
 			histogram[i]++;
 		}
-		/*int i0, i1;
+		int i0, i1;
 		for(i0 = 0; i0 < histogram.size(); i0++)
 		{
 			if(histogram[i0] > img3.area * .1f)
@@ -167,19 +158,14 @@ struct SApp : App {
 		{
 			if(histogram[i1] > img3.area * .1f)
 				break;
-		}*/
-		int i0 = (histogram.size() - 1)*.4f;
-		int i1 = (histogram.size() - 1)*.6f;
-		/*float i0_f = lmap((float)i0, 0.0f, (float)(histogram.size() - 1), 0.0f, 1.0f);
+		}
+		float i0_f = lmap((float)i0, 0.0f, (float)(histogram.size() - 1), 0.0f, 1.0f);
 		float i1_f = lmap((float)i1, 0.0f, (float)(histogram.size() - 1), 0.0f, 1.0f);
 		if(i1_f == i0_f)
-			i1_f++;*/
-		float j0 = histogram[i0];
-		float j1 = histogram[i1];
+			i1_f++;
 		forxy(img3)
 		{
-			float f = lmap(img3(p), j0, j1, 0.0f, 1.0f);
-			f = constrain<float>(f, 0, 1);
+			float f = lmap(img3(p), i0_f, i1_f, 0.0f, 1.0f);
 			//f *= 2.0f * .5f * exp(lmap(mouseX, 0.0f, 1.0f, log(.001f), log(100.0f)));
 			//f /= f + 1.0f;
 			float x = f;
@@ -192,11 +178,11 @@ struct SApp : App {
 				);
 		}
 
-		auto tex = gtex(img);
+		auto tex = gtex(img3);
 		tex = shade2(tex,
 			"float f = fetch1();"
 			"float fw = fwidth(f);"
-			//"f = smoothstep(.5 - fw / 2, 0.5 + fw / 2, f);"
+			"f = smoothstep(.5 - fw / 2, 0.5 + fw / 2, f);"
 			"_out.r = f;"
 			, ShadeOpts().scale(::scale)
 		);
