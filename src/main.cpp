@@ -58,10 +58,10 @@ struct SApp : App {
 	}
 	void stefanUpdate() {
 		if(!pause2) {
-			//float lerpAmount = cfg1::getOpt("lerpAmount", .5f, []() { return true; },
-			//	[&]() { return expRange(constrain(mouseX, 0.0f, 1.0f), .0001f, 1.0f); });
+			float lerpAmount = cfg1::getOpt("lerpAmount", .0031f, []() { return keys['l']; },
+				[&]() { return expRange(constrain(mouseX, 0.0f, 1.0f), .001f, 0.009f); });
 			//float lerpAmount = fmod(getElapsedSeconds(), 20.0) < 10.0f ? 0.005 : 0.01;
-			float lerpAmount = lerp(0.001, 0.009, pow(s1(getElapsedSeconds() * 0.6f), 3.0f));
+			//float lerpAmount = lerp(0.001, 0.009, pow(s1(getElapsedSeconds() * 0.6f), 3.0f));
 			cout << lerpAmount << endl;
 			img = separableConvolve<float, WrapModes::DefaultImpl>(img, getGaussianKernel(3, sigmaFromKsize(2.0f)));
 			float sum = std::accumulate(img.begin(), img.end(), 0.0f);
@@ -117,6 +117,7 @@ struct SApp : App {
 					lerpAmount
 				);
 			}
+#if 0
 			auto img2 = zeros_like(img);
 			vec2 center(img.Size() / 2);
 			forxy(img) {
@@ -127,6 +128,7 @@ struct SApp : App {
 				aaPoint(img2, vec2(p) + v, img(p));
 			}
 			img = img2;
+#endif
 
 			if (mouseDown_[0])
 			{
@@ -143,7 +145,7 @@ struct SApp : App {
 						w = max(0.0f, w);
 						w = 3 * w * w - 2 * w * w * w;
 						w = smoothstep(0.0, 0.5, w);
-						img.wr(x, y) *= 1-w;
+						img.wr(x, y) = lerp(img.wr(x, y), 1.0f, w);
 					}
 				}
 			}
@@ -156,6 +158,7 @@ struct SApp : App {
 		gl::clear(Color(0, 0, 0));
 		//tex.setMagFilter(GL_NEAREST);
 		Array2D<float> img3 = (keys['v']) ? varianceArr.clone() : img.clone();
+#if 0
 		float min_=*std::min_element(img3.begin(), img3.end());
 		float max_=*std::max_element(img3.begin(), img3.end());
 		if(min_==max_)
@@ -185,7 +188,7 @@ struct SApp : App {
 		float i1_f = lmap((float)i1, 0.0f, (float)(histogram.size() - 1), 0.0f, 1.0f);
 		if(i1_f == i0_f)
 			i1_f++;
-		forxy(img3)
+		if(0) forxy(img3)
 		{
 			float f = lmap(img3(p), i0_f, i1_f, 0.0f, 1.0f);
 			//f *= 2.0f * .5f * exp(lmap(mouseX, 0.0f, 1.0f, log(.001f), log(100.0f)));
@@ -199,7 +202,7 @@ struct SApp : App {
 				-pow(mouseX*distance(vec2(p),vec2(sx,sy)/2.0f), 2.0f)
 				);
 		}
-
+#endif
 		auto tex = gtex(img3);
 		tex = shade2(tex,
 			"float f = fetch1();"
