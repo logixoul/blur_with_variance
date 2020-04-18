@@ -24,6 +24,8 @@ struct SApp : App {
 		enableDenormalFlushToZero(); 
 		disableGLReadClamp();
 		reset();
+
+		stefanfw::eventHandler.subscribeToEvents(*this);
 	}
 	void update()
 	{
@@ -125,6 +127,26 @@ struct SApp : App {
 				aaPoint(img2, vec2(p) + v, img(p));
 			}
 			img = img2;
+
+			if (mouseDown_[0])
+			{
+				vec2 scaledm = vec2(mouseX * (float)sx, mouseY * (float)sy);
+				Area a(scaledm, scaledm);
+				int r = 20;
+				a.expand(r, r);
+				for (int x = a.x1; x <= a.x2; x++)
+				{
+					for (int y = a.y1; y <= a.y2; y++)
+					{
+						vec2 v = vec2(x, y) - scaledm;
+						float w = max(0.0f, 1.0f - length(v) / r);
+						w = max(0.0f, w);
+						w = 3 * w * w - 2 * w * w * w;
+						w = smoothstep(0.0, 0.5, w);
+						img.wr(x, y) *= 1-w;
+					}
+				}
+			}
 		} // pause2
 		if(pause || pause2)
 			Sleep(50);
@@ -187,6 +209,7 @@ struct SApp : App {
 			, ShadeOpts().scale(::scale)
 		);
 		tex = redToLuminance(tex);
+		gl::setMatricesWindow(getWindowSize(), false);
 		gl::draw(tex, getWindowBounds());
 	}
 	float s1(float f) { return .5f + .5f * sin(f); }

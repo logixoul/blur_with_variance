@@ -21,6 +21,7 @@ namespace stefanfw {
 		auto relMousePos = app->getMousePos() - app->getWindowPos();
 		::mouseX = relMousePos.x / (float)wsx;
 		::mouseY = relMousePos.y / (float)wsy;
+		cout << "mouseY=" << ::mouseY << endl;
 	}
 
 	void endFrame() {
