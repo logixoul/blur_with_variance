@@ -135,7 +135,6 @@
     </ClCompile>
     <ClCompile Include="qdebug.cpp" />
     <ClCompile Include="shade.cpp" />
-    <ClCompile Include="simplexnoise.cpp" />
     <ClCompile Include="stefanfw.cpp" />
     <ClCompile Include="stuff.cpp" />
     <ClCompile Include="sw.cpp" />
@@ -157,7 +156,6 @@
     <ClInclude Include="precompiled.h" />
     <ClInclude Include="qdebug.h" />
     <ClInclude Include="shade.h" />
-    <ClInclude Include="simplexnoise.h" />
     <ClInclude Include="stefanfw.h" />
     <ClInclude Include="stuff.h" />
     <ClInclude Include="sw.h" />
