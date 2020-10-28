@@ -58,7 +58,7 @@ struct SApp : App {
 	}
 	void stefanUpdate() {
 		if(!pause2) {
-			float lerpAmount = cfg1::getOpt("lerpAmount", .0031f, []() { return keys['l']; },
+			float lerpAmount = cfg1::getOpt("lerpAmount", .004f, []() { return keys['l']; },
 				[&]() { return expRange(constrain(mouseX, 0.0f, 1.0f), .001f, 0.009f); });
 
 			//float lerpAmount = fmod(getElapsedSeconds(), 20.0) < 10.0f ? 0.005 : 0.01;
