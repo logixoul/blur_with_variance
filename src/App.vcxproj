@@ -167,6 +167,9 @@
     <None Include="simplexnoise3d.fs.glsl" />
     <None Include="stuff.fs" />
   </ItemGroup>
+  <ItemGroup>
+    <Text Include="..\..\..\won%27t del\blur_with_variance\src\OldCode.txt" />
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>

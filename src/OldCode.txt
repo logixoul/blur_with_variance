@@ -1,0 +1,45 @@
+#if 0
+		float min_=*std::min_element(img3.begin(), img3.end());
+		float max_=*std::max_element(img3.begin(), img3.end());
+		if(min_==max_)
+			max_++;
+		vector<int> histogram(65535, 0.0f);
+		forxy(img3)
+		{
+			img3(p) = lmap(img3(p), min_, max_, 0.0f, 1.0f);
+		}
+		forxy(img3)
+		{
+			int i = (histogram.size() - 1) * img3(p);
+			histogram[i]++;
+		}
+		int i0, i1;
+		for(i0 = 0; i0 < histogram.size(); i0++)
+		{
+			if(histogram[i0] > img3.area * .1f)
+				break;
+		}
+		for(i1 = histogram.size() - 1; i1 >= 0; i1--)
+		{
+			if(histogram[i1] > img3.area * .1f)
+				break;
+		}
+		float i0_f = lmap((float)i0, 0.0f, (float)(histogram.size() - 1), 0.0f, 1.0f);
+		float i1_f = lmap((float)i1, 0.0f, (float)(histogram.size() - 1), 0.0f, 1.0f);
+		if(i1_f == i0_f)
+			i1_f++;
+		if(0) forxy(img3)
+		{
+			float f = lmap(img3(p), i0_f, i1_f, 0.0f, 1.0f);
+			//f *= 2.0f * .5f * exp(lmap(mouseX, 0.0f, 1.0f, log(.001f), log(100.0f)));
+			//f /= f + 1.0f;
+			float x = f;
+			//f = x/(x-100.0f*(x-1.0f));
+			//f = pow(f, 2.0f);
+			img3(p) = f;
+
+			if(0)img3(p) = 100.0f*exp(
+				-pow(mouseX*distance(vec2(p),vec2(sx,sy)/2.0f), 2.0f)
+				);
+		}
+#endif

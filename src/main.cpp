@@ -55,15 +55,19 @@ struct SApp : App {
 		{
 			pause2 = !pause2;
 		}
+		if (e.getChar() == ' ') {
+			stefanUpdate();
+		}
 	}
 	void stefanUpdate() {
 		if(!pause2) {
 			float lerpAmount = cfg1::getOpt("lerpAmount", .004f, []() { return keys['l']; },
-				[&]() { return expRange(constrain(mouseX, 0.0f, 1.0f), .001f, 0.009f); });
+				[&]() { return expRange(constrain(mouseX, 0.0f, 1.0f), .01f, 10000.0f); });
 
 			//float lerpAmount = fmod(getElapsedSeconds(), 20.0) < 10.0f ? 0.005 : 0.01;
 			float f = s1(getElapsedSeconds()*.5);
 			float blurAmount = lerp(3.0f, 7.0f, pow(f, 3.0f));
+			blurAmount = 2.0f;
 			
 			//cout << lerpAmount << endl;
 			img = separableConvolve<float, WrapModes::DefaultImpl>(img, getGaussianKernel(7, sigmaFromKsize(blurAmount)));
@@ -78,9 +82,11 @@ struct SApp : App {
 				f += .5f;
 				f = constrain(f, 0.0f, 1.0f);
 				img(p) = f;
+
+				//img(p) = 1.0f;
 			}
-			float sum_ = std::accumulate(img.begin(), img.end(), 0.0f);
-			float avg_ = sum_ / (float)img.area;
+			//float sum_ = std::accumulate(img.begin(), img.end(), 0.0f);
+			//float avg_ = sum_ / (float)img.area;
 			int r = 5;
 			Array2D<float> weights(r*2+1, r*2+1);
 			float sumw = 0.0f;
@@ -91,15 +97,22 @@ struct SApp : App {
 			forxy(varianceArr)
 			{
 				float sum = 0.0f;
+				float sumOfSquares = 0.0f;
 				for(int i = -r; i <= r; i++)
 				{
 					for(int j = -r; j <= r; j++)
 					{
 						float w = weights(i + r, j + r);
-						sum += img.wr(p.x + i, p.y + j) * w;
+						auto here = img.wr(p.x + i, p.y + j);
+						sum += here * w;
+						sumOfSquares += sq(here) * w;
 					}
 				}
-				float avg = sum / sumw;
+				// https://www.imageeprocessing.com/2015/10/local-variance-matlab-code.html
+				float avgSquared = sq(sum / sumw);
+				float avgOfSquareds = sumOfSquares / sumw;
+				varianceArr(p) = avgOfSquareds - avgSquared;
+				/*float avg = sum / sumw;
 				float variance = 0.0f;
 				for(int i = -r; i <= r; i++)
 				{
@@ -112,13 +125,14 @@ struct SApp : App {
 				if(avg == 0.0f)
 					varianceArr(p) = 1.0f;
 				else
-					varianceArr(p) = variance / avg;
+					varianceArr(p) = variance / avg;*/
 			}
 			forxy(img)
 			{
-				img(p) = lerp(img(p), varianceArr(p),
+				/*img(p) = lerp(img(p), varianceArr(p),
 					lerpAmount
-				);
+				);*/
+				img(p) += varianceArr(p) * lerpAmount;
 			}
 #if 0
 			auto img2 = zeros_like(img);
@@ -158,56 +172,15 @@ struct SApp : App {
 	}
 	void stefanDraw()
 	{
+		
 		gl::clear(Color(0, 0, 0));
 		//tex.setMagFilter(GL_NEAREST);
 		Array2D<float> img3 = (keys['v']) ? varianceArr.clone() : img.clone();
-#if 0
-		float min_=*std::min_element(img3.begin(), img3.end());
-		float max_=*std::max_element(img3.begin(), img3.end());
-		if(min_==max_)
-			max_++;
-		vector<int> histogram(65535, 0.0f);
-		forxy(img3)
-		{
-			img3(p) = lmap(img3(p), min_, max_, 0.0f, 1.0f);
-		}
-		forxy(img3)
-		{
-			int i = (histogram.size() - 1) * img3(p);
-			histogram[i]++;
-		}
-		int i0, i1;
-		for(i0 = 0; i0 < histogram.size(); i0++)
-		{
-			if(histogram[i0] > img3.area * .1f)
-				break;
-		}
-		for(i1 = histogram.size() - 1; i1 >= 0; i1--)
-		{
-			if(histogram[i1] > img3.area * .1f)
-				break;
-		}
-		float i0_f = lmap((float)i0, 0.0f, (float)(histogram.size() - 1), 0.0f, 1.0f);
-		float i1_f = lmap((float)i1, 0.0f, (float)(histogram.size() - 1), 0.0f, 1.0f);
-		if(i1_f == i0_f)
-			i1_f++;
-		if(0) forxy(img3)
-		{
-			float f = lmap(img3(p), i0_f, i1_f, 0.0f, 1.0f);
-			//f *= 2.0f * .5f * exp(lmap(mouseX, 0.0f, 1.0f, log(.001f), log(100.0f)));
-			//f /= f + 1.0f;
-			float x = f;
-			//f = x/(x-100.0f*(x-1.0f));
-			//f = pow(f, 2.0f);
-			img3(p) = f;
-
-			if(0)img3(p) = 100.0f*exp(
-				-pow(mouseX*distance(vec2(p),vec2(sx,sy)/2.0f), 2.0f)
-				);
-		}
-#endif
+		vec2 scaledm = vec2(mouseX * (float)sx, mouseY * (float)sy);
+		cout << "###" << img3.wr(ivec2(scaledm)) << "\n";
+		to01(img3);
 		auto tex = gtex(img3);
-		tex = shade2(tex,
+		if(0)tex = shade2(tex,
 			"float f = fetch1();"
 			"float fw = fwidth(f);"
 			"f = smoothstep(.5 - fw / 2, 0.5 + fw / 2, f);"
