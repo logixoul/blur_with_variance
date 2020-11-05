@@ -55,6 +55,7 @@ static int matTypeFromTex(gl::TextureRef tex) {
 	switch (tex->getInternalFormat()) {
 	case GL_R32F: return CV_32F; break;
 	case GL_RGB32F: return CV_32FC3; break;
+	case GL_RGB8: return CV_8UC3; break;
 	default: throw 0;
 	}
 }
@@ -119,6 +120,7 @@ void my_imshow(string desc, cv::Mat mat)
 	}
 	auto toShow_copy = toShow.clone();
 	gMainThreadCallQueue->pushCall([desc, toShow_copy]() {
-		cv::imshow(desc, toShow_copy);
+		//cv::imshow(desc, toShow_copy);
+		throw "not implemented";
 	});
 }

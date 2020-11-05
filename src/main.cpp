@@ -1,13 +1,13 @@
 #include "precompiled.h"
 #include "util.h"
-#include <sstream>
-#include <algorithm>
 #include "gpgpu.h"
-#include <cinder/app/Renderer.h>
 #include "stefanfw.h"
 #include "stuff.h"
 #include "Array2D_imageProc.h"
 #include "cfg1.h"
+#include "cvstuff.h"
+#include <opencv2/videoio.hpp>
+#include "CrossThreadCallQueue.h"
 
 int wsx = 1280, wsy = 720;
 int scale = 6;
@@ -17,6 +17,10 @@ Array2D<float> img(sx, sy);
 bool pause = false, pause2 = false;
 typedef std::complex<float> Complex;
 Array2D<float> varianceArr(sx, sy);
+
+cv::VideoWriter mVideoWriter = cv::VideoWriter("testVideo.mp4", //cv::CAP_FFMPEG, // has to be absent because otherwise i get isOpened=false
+	cv::VideoWriter::fourcc('m', 'p', '4', 'v'), // lx: has to be lowercase, because otherwise i get isOpened=false.
+	60, cv::Size(sx, sy), true);
 
 struct SApp : App {
 	void setup()
@@ -185,7 +189,7 @@ struct SApp : App {
 		}
 
 		auto tex = gtex(img3);
-		tex = shade2(tex,
+		if(0)tex = shade2(tex,
 			"float f = fetch1();"
 			"float fw = fwidth(f);"
 			//"f = smoothstep(.5 - fw / 2, 0.5 + fw / 2, f);"
@@ -194,7 +198,13 @@ struct SApp : App {
 		);
 		
 		tex = redToLuminance(tex);
+		auto mat = dlToMat3(tex, 0);
+		mat.convertTo(mat, CV_8UC3, 255.0f);
+		mVideoWriter.write(mat);
 		gl::draw(tex, getWindowBounds());
+	}
+	void cleanup() override {
+		mVideoWriter.release();
 	}
 	gl::TextureRef redToLuminance(gl::TextureRef in) {
 		return shade2(in, "float f = fetch1(); _out.rgb=vec3(f);", ShadeOpts().ifmt(GL_RGB8));
@@ -212,6 +222,7 @@ struct SApp : App {
 	}
 };
 
+CrossThreadCallQueue* gMainThreadCallQueue;
 CINDER_APP(SApp, RendererGl(),
 	[&](ci::app::App::Settings *settings)
 {
