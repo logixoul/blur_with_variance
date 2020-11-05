@@ -6,6 +6,8 @@
 #include <cinder/app/Renderer.h>
 #include "stefanfw.h"
 #include "stuff.h"
+#include "Array2D_imageProc.h"
+#include "cfg1.h"
 
 int wsx = 1280, wsy = 720;
 int scale = 6;
@@ -19,7 +21,6 @@ Array2D<float> varianceArr(sx, sy);
 struct SApp : App {
 	void setup()
 	{
-		createConsole();
 		setWindowSize(wsx, wsy);
 		enableDenormalFlushToZero();
 		disableGLReadClamp();
@@ -84,7 +85,7 @@ struct SApp : App {
 			Array2D<float> weights(r * 2 + 1, r * 2 + 1);
 			float sumw = 0.0f;
 			forxy(weights) {
-				weights(p) = smoothstep(r, r - 1, distance(vec2(p), vec2(r, r)));
+				weights(p) = smoothstep<float>(r, r - 1, distance(vec2(p), vec2(r, r)));
 				sumw += weights(p);
 			}
 			forxy(varianceArr)
@@ -191,8 +192,12 @@ struct SApp : App {
 			"_out.r = f;"
 			, ShadeOpts().scale(::scale)
 		);
+		
 		tex = redToLuminance(tex);
 		gl::draw(tex, getWindowBounds());
+	}
+	gl::TextureRef redToLuminance(gl::TextureRef in) {
+		return shade2(in, "float f = fetch1(); _out.rgb=vec3(f);", ShadeOpts().ifmt(GL_RGB8));
 	}
 	float s1(float f) { return .5f + .5f * sin(f); }
 	float expRange(float f, float val0, float val1) { return exp(lmap(f, 0.0f, 1.0f, log(val0), log(val1))); }
@@ -207,4 +212,9 @@ struct SApp : App {
 	}
 };
 
-CINDER_APP(SApp, RendererGl)
+CINDER_APP(SApp, RendererGl(),
+	[&](ci::app::App::Settings *settings)
+{
+	//bool developer = (bool)ifstream(getAssetPath("developer"));
+	settings->setConsoleWindowEnabled(true);
+})

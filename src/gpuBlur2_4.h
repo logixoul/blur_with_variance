@@ -10,5 +10,3 @@ namespace gpuBlur2_4 {
 	gl::TextureRef upscale(gl::TextureRef src, float hscale, float vscale);
 	gl::TextureRef singleblur(gl::TextureRef src, float hscale, float vscale);
 }
-
-namespace gpuBlur = gpuBlur2_4;
